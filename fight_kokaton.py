@@ -165,7 +165,7 @@ def main():
     bird = Bird((300, 200))
     # リスト内包表記で5個のBombインスタンスが入ったリスト(bombs)を作成する
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
-    beam = None 
+    beams = [] 
     score = Score() 
 
     clock = pg.time.Clock()
@@ -176,11 +176,10 @@ def main():
                 return
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
             #     # スペースキー押下でBeamクラスのインスタンス生成
-                beam = Beam(bird)            
+                beams.append(Beam(bird))            
         screen.blit(bg_img, [0, 0])
         
         # ① 各爆弾(bomb)について、こうかとん・ビームとの衝突判定を行う
-        # ★enumerateを使ってインデックス(i)を取得する
         for i, bomb in enumerate(bombs):
             # こうかとんと爆弾の衝突判定 (ゲームオーバー)
             if bird.rct.colliderect(bomb.rct):
@@ -193,23 +192,33 @@ def main():
                 return
 
             # ビームと爆弾の衝突判定
-            if beam is not None:
-                if beam.rct.colliderect(bomb.rct):
-                    beam = None
-                    bombs[i] = None  
-                    bird.change_img(6, screen)
-                    pg.display.update()
-                    score.value += 1
+            for j, beam in enumerate(beams):
+                
+                
+                if beam is not None and bombs[i] is not None:
+                    if beam.rct.colliderect(bomb.rct):
+                        beams[j] = None
+                        bombs[i] = None  
+                        bird.change_img(6, screen)
+                        pg.display.update()
+                        score.value += 1
 
         # ② リスト内包表記を使って、Noneになった（撃ち落とされた）爆弾をリストから除外する
         bombs = [bomb for bomb in bombs if bomb is not None]
+        beams = [beam for beam in beams if beam is not None]  # 追加
 
         # 画面の更新処理
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         
-        if beam is not None:
-            beam.update(screen)  
+        for j, beam in enumerate(beams):
+            beam.update(screen)
+
+            if check_bound(beam.rct) != (True, True):
+                beams[j] = None 
+        
+        # もう一度Noneを除外（画面外に出たビームを消すため）
+        beams = [beam for beam in beams if beam is not None]
             
         # ③ 更新されたリスト(bombs)に残っている爆弾をすべてupdateする
         for bomb in bombs:
